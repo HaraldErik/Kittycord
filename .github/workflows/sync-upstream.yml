@@ -1,0 +1,66 @@
+name: Sync upstream
+
+# Merges Equicord/Equibop (upstream) INTO this fork. Never pushes anywhere except this repo.
+on:
+    schedule:
+        - cron: "17 */6 * * *"
+    workflow_dispatch:
+
+permissions:
+    contents: write
+    actions: write
+
+concurrency:
+    group: sync-upstream
+    cancel-in-progress: false
+
+jobs:
+    sync:
+        if: github.repository == 'HaraldErik/Kittycord'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: main
+                  fetch-depth: 0
+
+            - name: Merge upstream/main
+              id: merge
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git remote add upstream https://github.com/Equicord/Equibop.git
+                  git fetch upstream main
+
+                  if git merge-base --is-ancestor upstream/main HEAD; then
+                      echo "Already up to date."
+                      echo "changed=false" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  BEFORE=$(git rev-parse HEAD)
+                  if ! git merge upstream/main --no-edit -m "Merge upstream Equicord/Equibop"; then
+                      # Only our own files may be auto-resolved (README); anything else needs a human.
+                      git checkout --ours README.md 2>/dev/null && git add README.md || true
+                      if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+                          echo "::error::Unresolvable merge conflicts:"
+                          git diff --name-only --diff-filter=U
+                          exit 1
+                      fi
+                      git commit --no-edit
+                  fi
+
+                  # Our CI lives in .github; GITHUB_TOKEN can't push workflow changes, and
+                  # upstream's workflows (AUR, winget, ...) don't belong in the fork.
+                  git rm -rq --ignore-unmatch .github
+                  git checkout "$BEFORE" -- .github
+                  git commit -q --amend --no-edit || true
+
+                  git push origin HEAD:main
+                  echo "changed=true" >> "$GITHUB_OUTPUT"
+
+            - name: Trigger release build
+              if: steps.merge.outputs.changed == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref main
