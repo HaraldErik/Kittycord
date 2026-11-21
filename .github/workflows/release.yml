@@ -1,60 +1,115 @@
 name: Release
 
 on:
-    push:
-        tags:
-            - v*
     workflow_dispatch:
+        inputs:
+            force:
+                description: "Rebuild even if a release for this version already exists"
+                type: boolean
+                default: false
 
 permissions:
     contents: write
 
 jobs:
-    release:
-        runs-on: ${{ matrix.os }}
-
-        strategy:
-            matrix:
-                os: [macos-latest, ubuntu-latest, windows-latest]
-                include:
-                    - os: macos-latest
-                      platform: mac
-                    - os: ubuntu-latest
-                      platform: linux
-                    - os: windows-latest
-                      platform: windows
-
+    build:
+        if: github.repository == 'HaraldErik/Kittycord'
+        runs-on: ubuntu-latest
+        outputs:
+            version: ${{ steps.ver.outputs.version }}
+            skip: ${{ steps.ver.outputs.skip }}
         steps:
             - uses: actions/checkout@v4
             - uses: oven-sh/setup-bun@v2
 
+            - name: Brand + resolve version
+              id: ver
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  node .github/scripts/brand.mjs
+                  VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+                  if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 && [ "${{ inputs.force }}" != "true" ]; then
+                      echo "Release v$VERSION already exists, skipping."
+                      echo "skip=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "skip=false" >> "$GITHUB_OUTPUT"
+                  fi
+
             - name: Install system dependencies
-              if: ${{ matrix.platform == 'linux' }}
+              if: steps.ver.outputs.skip == 'false'
               run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
 
             - name: Install dependencies
+              if: steps.ver.outputs.skip == 'false'
               run: bun install
 
             - name: Build
+              if: steps.ver.outputs.skip == 'false'
               run: bun run build
 
-            - name: Run Electron Builder
-              if: ${{ matrix.platform != 'mac' }}
-              run: |
-                  bun run electron-builder --${{ matrix.platform }} --publish always
-              env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Package (AppImage, pacman, tar.gz)
+              if: steps.ver.outputs.skip == 'false'
+              run: bun run electron-builder --linux --x64 --publish never
 
-            - name: Run Electron Builder
-              if: ${{ matrix.platform == 'mac' }}
+            - name: Prepare assets
+              if: steps.ver.outputs.skip == 'false'
               run: |
-                  echo "$API_KEY" > apple.p8
-                  bun run electron-builder --${{ matrix.platform }} --publish always
+                  cd dist
+                  # pacman wants .pkg.tar.zst
+                  for f in *.pacman; do mv "$f" "${f%.pacman}-1-x86_64.pkg.tar.zst"; done
+                  ls -la
+
+            - name: Publish GitHub release
+              if: steps.ver.outputs.skip == 'false'
               env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  CSC_LINK: ${{ secrets.APPLE_SIGNING_CERT }}
-                  CSC_KEY_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
-                  API_KEY: ${{ secrets.APPLE_API_KEY }}
-                  APPLE_API_KEY: apple.p8
-                  APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-                  APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  V=${{ steps.ver.outputs.version }}
+                  gh release delete "v$V" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+                  gh release create "v$V" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+                      --title "Kittycord $V" --notes "Automated build of Kittycord $V (merged from upstream Equicord/Equibop)." --latest \
+                      dist/*.AppImage dist/*.AppImage.blockmap dist/*.tar.gz dist/*.pkg.tar.zst dist/latest-linux.yml
+
+            - uses: actions/upload-artifact@v4
+              if: steps.ver.outputs.skip == 'false'
+              with:
+                  name: pacman-pkg
+                  path: dist/*.pkg.tar.zst
+
+    pacman-repo:
+        needs: build
+        if: needs.build.outputs.skip == 'false'
+        runs-on: ubuntu-latest
+        container: archlinux:latest
+        steps:
+            - name: Install tools
+              run: pacman -Syu --noconfirm --needed pacman-contrib github-cli
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: pacman-pkg
+                  path: repo
+
+            - name: Build repo db and upload to the "repo" release
+              working-directory: repo
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  repo-add kittycord.db.tar.gz ./*.pkg.tar.zst
+                  # release assets can't be symlinks
+                  cp --remove-destination kittycord.db.tar.gz kittycord.db
+                  cp --remove-destination kittycord.files.tar.gz kittycord.files
+
+                  gh release view repo --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+                      gh release create repo --repo "$GITHUB_REPOSITORY" --latest=false \
+                          --title "pacman repo" --notes "Pacman repository for Kittycord. Do not delete. See README."
+
+                  # drop previous package files, keep only the current one
+                  KEEP=$(ls ./*.pkg.tar.zst | xargs -n1 basename)
+                  gh release view repo --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep '\.pkg\.tar\.zst$' | grep -vxF "$KEEP" | \
+                      xargs -r -n1 gh release delete-asset repo --repo "$GITHUB_REPOSITORY" --yes || true
+
+                  gh release upload repo --repo "$GITHUB_REPOSITORY" --clobber \
+                      ./*.pkg.tar.zst kittycord.db kittycord.db.tar.gz kittycord.files kittycord.files.tar.gz
