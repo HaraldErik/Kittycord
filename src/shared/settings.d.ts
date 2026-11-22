@@ -29,6 +29,7 @@ export interface Settings {
     hardwareVideoEncoding: boolean;
     kittyQualityFix: boolean;
     kittyPerformanceFix: boolean;
+    kittyBadges: boolean;
     arRPC: boolean;
     appBadge: boolean;
     badgeOnlyForMentions: boolean;

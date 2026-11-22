@@ -6,6 +6,7 @@
 
 import "./updater";
 import "./ipc";
+import "./kittyBadges";
 import "./rpc";
 import "./userAssets";
 import "./vesktopProtocol";
