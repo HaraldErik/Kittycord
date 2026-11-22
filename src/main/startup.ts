@@ -19,6 +19,7 @@ import { DATA_DIR, SESSION_DATA_DIR } from "./constants";
 import { createFirstLaunchTour } from "./firstLaunch";
 import { createWindows, mainWin, openDeepLink } from "./mainWindow";
 import { registerMediaPermissionsHandler } from "./mediaPermissions";
+import { findNvencDriverDir, NVENC_DRIVER_NAME } from "./nvenc";
 import { registerScreenShareHandler } from "./screenShare";
 import { Settings, State } from "./settings";
 import { setAsDefaultProtocolClient } from "./utils/setAsDefaultProtocolClient";
@@ -52,7 +53,7 @@ function init() {
     clearStaleWasmCodeCache();
     setAsDefaultProtocolClient("discord");
 
-    const { disableSmoothScroll, hardwareAcceleration, hardwareVideoAcceleration, hardwareVideoEncoding } =
+    const { disableSmoothScroll, hardwareAcceleration, hardwareVideoAcceleration, hardwareVideoEncoding, kittyNvenc } =
         Settings.store;
     const { launchArguments } = State.store;
 
@@ -67,6 +68,22 @@ function init() {
     } else {
         if (hardwareVideoEncoding) {
             enabledFeatures.add("AcceleratedVideoEncoder");
+        }
+
+        if (kittyNvenc && isLinux) {
+            const dir = findNvencDriverDir();
+            if (dir) {
+                // Experimental: encode screenshares on NVIDIA's NVENC chip through our VA-API shim driver
+                process.env.LIBVA_DRIVERS_PATH = dir;
+                process.env.LIBVA_DRIVER_NAME = NVENC_DRIVER_NAME;
+                enabledFeatures.add("AcceleratedVideoEncoder");
+                enabledFeatures.add("VaapiOnNvidiaGPUs");
+                enabledFeatures.add("VaapiIgnoreDriverChecks");
+                app.commandLine.appendSwitch("disable-gpu-sandbox");
+                console.log("NVENC encoding enabled, driver:", dir);
+            } else {
+                console.warn("NVENC encoding is enabled in settings but the driver was not found");
+            }
         }
 
         if (hardwareVideoAcceleration) {

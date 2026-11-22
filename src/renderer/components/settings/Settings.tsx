@@ -15,6 +15,7 @@ import { AutoStartToggle } from "./AutoStartToggle";
 import { DeveloperOptionsButton } from "./DeveloperOptions";
 import { DiscordBranchPicker } from "./DiscordBranchPicker";
 import { KittyBadgesSettings } from "./KittyBadges";
+import { KittyNvencToggle } from "./KittyNvencToggle";
 import { NotificationBadgeToggle } from "./NotificationBadgeToggle";
 import { OutdatedVesktopWarning } from "./OutdatedVesktopWarning";
 import { Updater } from "./Updater";
@@ -57,7 +58,8 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
             description:
                 "Use your GPU to encode your screenshare. This lowers CPU usage, but on some drivers (for example AMD with Mesa 24.3 or newer) viewers will be stuck loading your stream forever.",
             disabled: () => !Settings.store.hardwareAcceleration
-        }
+        },
+        KittyNvencToggle
     ],
     "Kitty Stream Fixes": [
         {

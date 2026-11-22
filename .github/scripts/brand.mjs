@@ -21,6 +21,8 @@ b.publish = { provider: "github", owner: "HaraldErik", repo: "Kittycord" };
 b.pacman = { ...b.pacman, fpm: [...(b.pacman?.fpm ?? []), `--iteration=${process.env.KITTY_REL || 1}`] };
 
 b.linux.icon = "build/icon.png";
+// experimental NVENC VA-API driver, built by CI into build/nvenc
+b.extraResources = [...(b.extraResources ?? []), { from: "build/nvenc", to: "nvenc" }];
 b.linux.maintainer = "HaraldErik <191792037+HaraldErik@users.noreply.github.com>";
 b.linux.target = [
     { target: "AppImage", arch: ["x64"] },

@@ -30,6 +30,7 @@ export interface Settings {
     kittyQualityFix: boolean;
     kittyPerformanceFix: boolean;
     kittyBadges: boolean;
+    kittyNvenc: boolean;
     arRPC: boolean;
     appBadge: boolean;
     badgeOnlyForMentions: boolean;
