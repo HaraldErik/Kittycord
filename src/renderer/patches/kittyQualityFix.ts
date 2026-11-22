@@ -53,10 +53,10 @@ export function setVideoStartBitrate(sdp: string, kbps: number): string {
         .join("");
 }
 
-function munge(desc: RTCSessionDescriptionInit | undefined) {
+function munge<T extends RTCLocalSessionDescriptionInit>(desc: T | undefined): T | undefined {
     if (!desc?.sdp || !Settings.store.kittyQualityFix) return desc;
     try {
-        return { type: desc.type, sdp: setVideoStartBitrate(desc.sdp, START_BITRATE_KBPS) };
+        return { ...desc, sdp: setVideoStartBitrate(desc.sdp, START_BITRATE_KBPS) };
     } catch (e) {
         logger.error("Failed to patch SDP", e);
         return desc;
