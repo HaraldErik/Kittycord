@@ -64,8 +64,14 @@ function munge(desc: RTCSessionDescriptionInit | undefined) {
 }
 
 const proto = RTCPeerConnection.prototype;
-const setLocalDescription = proto.setLocalDescription as (this: RTCPeerConnection, d?: RTCSessionDescriptionInit) => Promise<void>;
-const setRemoteDescription = proto.setRemoteDescription as (this: RTCPeerConnection, d: RTCSessionDescriptionInit) => Promise<void>;
+const setLocalDescription = proto.setLocalDescription as (
+    this: RTCPeerConnection,
+    d?: RTCSessionDescriptionInit
+) => Promise<void>;
+const setRemoteDescription = proto.setRemoteDescription as (
+    this: RTCPeerConnection,
+    d: RTCSessionDescriptionInit
+) => Promise<void>;
 
 proto.setLocalDescription = function (desc?: RTCLocalSessionDescriptionInit) {
     return setLocalDescription.call(this, munge(desc));
