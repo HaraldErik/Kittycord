@@ -34,6 +34,7 @@ import { mainWin } from "./mainWindow";
 import { Settings, State } from "./settings";
 import { enableHardwareAcceleration } from "./startup";
 import { handle, handleSync } from "./utils/ipcWrappers";
+import { patchEquicordRenderer } from "./utils/patchEquicordRenderer";
 import { PopoutWindows } from "./utils/popout";
 import { relaunch } from "./utils/relaunch";
 import { showWindow } from "./utils/showWindow";
@@ -41,7 +42,9 @@ import { isValidVencordInstall } from "./utils/vencordLoader";
 import { VENCORD_DIR } from "./vencordDir";
 
 handleSync(IpcEvents.GET_VENCORD_PRELOAD_SCRIPT, () => readFileSync(join(VENCORD_DIR, "preload.js"), "utf-8"));
-handleSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT, () => readFileSync(join(VENCORD_DIR, "renderer.js"), "utf-8"));
+handleSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT, () =>
+    patchEquicordRenderer(readFileSync(join(VENCORD_DIR, "renderer.js"), "utf-8"))
+);
 
 const VESKTOP_RENDERER_JS_PATH = join(__dirname, "renderer.js");
 const VESKTOP_RENDERER_CSS_PATH = join(__dirname, "renderer.css");

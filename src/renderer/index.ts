@@ -11,6 +11,7 @@ import "./fixes";
 import "./rpc";
 import "./patches/tray";
 import "./patches/kittyBadges";
+import "./plugins/hideBotTag";
 import "./patches/kittyBranding";
 import "./patches/kittyQualityFix";
 import "./patches/kittyPerformanceFix";
