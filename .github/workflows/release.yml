@@ -44,15 +44,7 @@ jobs:
             # Experimental NVENC VA-API driver (MIT, https://github.com/nitkanikita21/nvenc-vaapi-driver), pinned commit
             - name: Build NVENC VA-API driver
               if: steps.ver.outputs.skip == 'false'
-              run: |
-                  sudo apt-get install -y libva-dev libclang-dev
-                  git clone https://github.com/nitkanikita21/nvenc-vaapi-driver "$RUNNER_TEMP/nvd"
-                  git -C "$RUNNER_TEMP/nvd" checkout 58fc3427a5b97701a6e70f266c1296fb7782f7c4
-                  cargo build --release --manifest-path "$RUNNER_TEMP/nvd/Cargo.toml"
-                  mkdir -p build/nvenc
-                  cp "$RUNNER_TEMP/nvd/target/release/libnvidia_nvenc_drv_video.so" build/nvenc/nvidia_nvenc_drv_video.so
-                  cp "$RUNNER_TEMP"/nvd/LICENSE* build/nvenc/
-                  ls -la build/nvenc
+              run: bash .github/scripts/build-nvenc.sh
 
             - name: Build
               if: steps.ver.outputs.skip == 'false'
