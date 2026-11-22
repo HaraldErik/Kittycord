@@ -56,7 +56,11 @@ export function setVideoStartBitrate(sdp: string, kbps: number): string {
 function munge<T extends RTCLocalSessionDescriptionInit>(desc: T | undefined): T | undefined {
     if (!desc?.sdp || !Settings.store.kittyQualityFix) return desc;
     try {
-        return { ...desc, sdp: setVideoStartBitrate(desc.sdp, START_BITRATE_KBPS) };
+        // Don't spread `desc`: Discord can pass an RTCSessionDescription object whose type/sdp are prototype
+        // getters, so spreading would silently drop `type` and break the connection.
+        const out: RTCLocalSessionDescriptionInit = { sdp: setVideoStartBitrate(desc.sdp, START_BITRATE_KBPS) };
+        if (desc.type) out.type = desc.type;
+        return out as T;
     } catch (e) {
         logger.error("Failed to patch SDP", e);
         return desc;
@@ -73,9 +77,24 @@ const setRemoteDescription = proto.setRemoteDescription as (
     d: RTCSessionDescriptionInit
 ) => Promise<void>;
 
+// If the patched description is ever rejected, retry with the untouched one so voice can never break because of us.
+async function withFallback<T extends RTCLocalSessionDescriptionInit>(
+    desc: T | undefined,
+    call: (d: T | undefined) => Promise<void>
+) {
+    const patched = munge(desc);
+    if (patched === desc) return call(desc);
+    try {
+        return await call(patched);
+    } catch (e) {
+        logger.error("Patched SDP rejected, retrying with the original", e);
+        return call(desc);
+    }
+}
+
 proto.setLocalDescription = function (desc?: RTCLocalSessionDescriptionInit) {
-    return setLocalDescription.call(this, munge(desc));
+    return withFallback(desc, d => setLocalDescription.call(this, d));
 };
 proto.setRemoteDescription = function (desc: RTCSessionDescriptionInit) {
-    return setRemoteDescription.call(this, munge(desc)!);
+    return withFallback(desc, d => setRemoteDescription.call(this, d!));
 };
