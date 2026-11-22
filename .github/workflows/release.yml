@@ -25,17 +25,13 @@ jobs:
             - name: Brand + resolve version
               id: ver
               env:
-                  GH_TOKEN: ${{ github.token }}
+                  KITTY_REL: ${{ github.run_number }}
               run: |
                   node .github/scripts/brand.mjs
                   VERSION=$(node -p "require('./package.json').version")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-                  if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 && [ "${{ inputs.force }}" != "true" ]; then
-                      echo "Release v$VERSION already exists, skipping."
-                      echo "skip=true" >> "$GITHUB_OUTPUT"
-                  else
-                      echo "skip=false" >> "$GITHUB_OUTPUT"
-                  fi
+                  echo "tag=v$VERSION-r$KITTY_REL" >> "$GITHUB_OUTPUT"
+                  echo "skip=false" >> "$GITHUB_OUTPUT"
 
             - name: Install system dependencies
               if: steps.ver.outputs.skip == 'false'
@@ -58,7 +54,7 @@ jobs:
               run: |
                   cd dist
                   # pacman wants .pkg.tar.zst
-                  for f in *.pacman; do mv "$f" "${f%.pacman}-1-x86_64.pkg.tar.zst"; done
+                  for f in *.pacman; do mv "$f" "${f%.pacman}-${{ github.run_number }}-x86_64.pkg.tar.zst"; done
                   ls -la
 
             - name: Publish GitHub release
@@ -67,9 +63,8 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
               run: |
                   V=${{ steps.ver.outputs.version }}
-                  gh release delete "v$V" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-                  gh release create "v$V" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-                      --title "Kittycord $V" --notes "Automated build of Kittycord $V (merged from upstream Equicord/Equibop)." --latest \
+                  gh release create "${{ steps.ver.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+                      --title "Kittycord $V (build ${{ github.run_number }})" --notes "Automated build of Kittycord $V (merged from upstream Equicord/Equibop)." --latest \
                       dist/*.AppImage dist/*.tar.gz dist/*.pkg.tar.zst dist/latest-linux.yml
 
             - uses: actions/upload-artifact@v4
