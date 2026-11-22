@@ -13,6 +13,7 @@ export const DefaultEquibopSettings: Settings = {
     hardwareVideoEncoding: false,
     kittyQualityFix: true,
     kittyPerformanceFix: true,
+    kittyBadges: true,
     nativeTitleBar: process.platform !== "win32",
     staticTitle: false,
     enableMenu: false,

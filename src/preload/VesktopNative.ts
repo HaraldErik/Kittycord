@@ -10,6 +10,7 @@ import type { IpcMessage, IpcResponse } from "main/ipcCommands";
 import type { Settings } from "shared/settings";
 
 import { IpcEvents } from "../shared/IpcEvents";
+import { KittyBadgesIpc } from "../shared/kittyBadges";
 import { invoke, sendSync } from "./typedIpc";
 
 type SpellCheckerResultCallback = (word: string, suggestions: string[]) => void;
@@ -27,6 +28,24 @@ ipcRenderer.on(IpcEvents.DEVTOOLS_OPENED, () => onDevtoolsOpen());
 ipcRenderer.on(IpcEvents.DEVTOOLS_CLOSED, () => onDevtoolsClose());
 
 export const VesktopNative = {
+    kittyBadges: {
+        loginStart: () =>
+            ipcRenderer.invoke(KittyBadgesIpc.LOGIN_START) as Promise<{ userCode: string; expiresAt: number }>,
+        loginStatus: () =>
+            ipcRenderer.invoke(KittyBadgesIpc.LOGIN_STATUS) as Promise<import("shared/kittyBadges").LoginStatus>,
+        loginCancel: () => ipcRenderer.invoke(KittyBadgesIpc.LOGIN_CANCEL) as Promise<void>,
+        logout: () => ipcRenderer.invoke(KittyBadgesIpc.LOGOUT) as Promise<void>,
+        deleteAccount: () => ipcRenderer.invoke(KittyBadgesIpc.DELETE_ACCOUNT) as Promise<boolean>,
+        me: () => ipcRenderer.invoke(KittyBadgesIpc.ME) as Promise<import("shared/kittyBadges").MeResponse | null>,
+        set: (action: "add" | "remove", badge: string) =>
+            ipcRenderer.invoke(KittyBadgesIpc.SET, action, badge) as Promise<
+                import("shared/kittyBadges").MeResponse | null
+            >,
+        lookup: (users: string[]) =>
+            ipcRenderer.invoke(KittyBadgesIpc.LOOKUP, users) as Promise<import("shared/kittyBadges").BadgeLookup>,
+        catalog: () =>
+            ipcRenderer.invoke(KittyBadgesIpc.CATALOG) as Promise<import("shared/kittyBadges").CatalogBadge[]>
+    },
     app: {
         relaunch: () => invoke<void>(IpcEvents.RELAUNCH),
         getVersion: () => sendSync<void>(IpcEvents.GET_VERSION),

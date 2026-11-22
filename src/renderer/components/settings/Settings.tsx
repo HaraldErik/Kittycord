@@ -14,6 +14,7 @@ import { isMac } from "renderer/utils";
 import { AutoStartToggle } from "./AutoStartToggle";
 import { DeveloperOptionsButton } from "./DeveloperOptions";
 import { DiscordBranchPicker } from "./DiscordBranchPicker";
+import { KittyBadgesSettings } from "./KittyBadges";
 import { NotificationBadgeToggle } from "./NotificationBadgeToggle";
 import { OutdatedVesktopWarning } from "./OutdatedVesktopWarning";
 import { Updater } from "./Updater";
@@ -72,6 +73,7 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
                 "Lowers the cost of screen sharing while gaming: avoids the expensive VP9/AV1/H265 software encoders (uses H264/VP8) and asks the screen capturer for no more frames than the stream needs. Applies to the next stream."
         }
     ],
+    "Kitty Badges": [KittyBadgesSettings],
     "User Interface": [
         {
             key: "nativeTitleBar",
