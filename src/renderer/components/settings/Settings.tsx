@@ -58,6 +58,20 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
             disabled: () => !Settings.store.hardwareAcceleration
         }
     ],
+    "Kitty Stream Fixes": [
+        {
+            key: "kittyQualityFix",
+            title: "Kitty Quality Stream Fix",
+            description:
+                "Stops streams from starting at 270-540p for the first ~8 seconds by giving Chromium's bandwidth estimator a realistic start bitrate. Applies to the next voice connection."
+        },
+        {
+            key: "kittyPerformanceFix",
+            title: "Kitty Performance Fix",
+            description:
+                "Lowers the cost of screen sharing while gaming: avoids the expensive VP9/AV1/H265 software encoders (uses H264/VP8) and asks the screen capturer for no more frames than the stream needs. Applies to the next stream."
+        }
+    ],
     "User Interface": [
         {
             key: "nativeTitleBar",

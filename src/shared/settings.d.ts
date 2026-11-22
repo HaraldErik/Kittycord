@@ -27,6 +27,8 @@ export interface Settings {
     hardwareAcceleration: boolean;
     hardwareVideoAcceleration: boolean;
     hardwareVideoEncoding: boolean;
+    kittyQualityFix: boolean;
+    kittyPerformanceFix: boolean;
     arRPC: boolean;
     appBadge: boolean;
     badgeOnlyForMentions: boolean;
