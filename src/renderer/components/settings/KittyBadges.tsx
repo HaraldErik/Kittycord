@@ -45,7 +45,7 @@ export const KittyBadgesSettings: SettingsComponent = ({ settings }) => {
         try {
             await fn();
         } catch {
-            showToast(error);
+            showToast({ text: error, variant: "critical" });
         } finally {
             setBusy(false);
             void refreshStatus();
@@ -137,7 +137,7 @@ export const KittyBadgesSettings: SettingsComponent = ({ settings }) => {
                                 onClick={() =>
                                     run(async () => {
                                         if (await VesktopNative.kittyBadges.deleteAccount())
-                                            showToast("Your badge data was deleted");
+                                            showToast({ text: "Your badge data was deleted", variant: "success" });
                                     }, "Couldn't delete")
                                 }
                             >
@@ -157,7 +157,7 @@ export const KittyBadgesSettings: SettingsComponent = ({ settings }) => {
                                                 <img src={`${CDN}${badge.icon}.png`} width={22} height={22} alt="" />
                                             )}
                                             {badge.name}
-                                            <Text variant="text-xs/normal" color="text-muted">
+                                            <Text size="xs" color="text-muted">
                                                 {real ? "(verified)" : "(custom)"}
                                             </Text>
                                         </span>
