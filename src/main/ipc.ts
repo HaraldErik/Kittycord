@@ -31,6 +31,7 @@ import { VENCORD_QUICKCSS_FILE, VENCORD_THEMES_DIR } from "./constants";
 import { AppEvents } from "./events";
 import { getPlatformSpoofInfo } from "./gnuSpoofing";
 import { mainWin } from "./mainWindow";
+import { findNvencDriverDir } from "./nvenc";
 import { Settings, State } from "./settings";
 import { enableHardwareAcceleration } from "./startup";
 import { handle, handleSync } from "./utils/ipcWrappers";
@@ -45,6 +46,8 @@ handleSync(IpcEvents.GET_VENCORD_PRELOAD_SCRIPT, () => readFileSync(join(VENCORD
 handleSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT, () =>
     patchEquicordRenderer(readFileSync(join(VENCORD_DIR, "renderer.js"), "utf-8"))
 );
+
+handleSync(IpcEvents.HAS_NVENC_DRIVER, () => findNvencDriverDir() !== null);
 
 const VESKTOP_RENDERER_JS_PATH = join(__dirname, "renderer.js");
 const VESKTOP_RENDERER_CSS_PATH = join(__dirname, "renderer.css");
