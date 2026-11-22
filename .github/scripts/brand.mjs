@@ -19,6 +19,7 @@ b.publish = { provider: "github", owner: "HaraldErik", repo: "Kittycord" };
 // pacman release number: bumps on every build so pacman/yay see a newer package even when upstream's version didn't change
 b.pacman = { ...b.pacman, fpm: [...(b.pacman?.fpm ?? []), `--iteration=${process.env.KITTY_REL || 1}`] };
 
+b.linux.icon = "build/icon.png";
 b.linux.maintainer = "HaraldErik <191792037+HaraldErik@users.noreply.github.com>";
 b.linux.target = [
     { target: "AppImage", arch: ["x64"] },
