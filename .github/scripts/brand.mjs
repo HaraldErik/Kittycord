@@ -1,6 +1,7 @@
 // Rebrands the upstream Equibop package.json as Kittycord at build time.
 // Keeping this out of the source tree means upstream merges never conflict on package.json.
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 
@@ -34,3 +35,32 @@ Object.assign(b.linux.desktop.entry, {
 
 writeFileSync("package.json", JSON.stringify(pkg, null, 4) + "\n");
 console.log(`Branded as ${pkg.name} ${pkg.version}`);
+
+// Rebrand user-visible "Equibop" text at build time (not in git, so upstream merges never conflict).
+// \bEquibop\b skips identifiers (DefaultEquibopSettings, EquibopState...). Lowercase `equibop` (protocol scheme,
+// loader dir, storage keys) is functional and left alone, as are URLs (preceded by "/") and the patch owner name.
+const SKIP = new Set(["src/renderer/patches/shared.ts"]);
+function walk(dir) {
+    for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.(tsx?|html)$/.test(name) && !SKIP.has(path.replaceAll("\\", "/"))) {
+            const text = readFileSync(path, "utf8");
+            const out = text.replace(/(?<![/\w.-])Equibop\b(?!\.exe|[\w.-]*:\/\/)/g, "Kittycord");
+            if (out !== text) writeFileSync(path, out);
+        }
+    }
+}
+walk("src");
+
+// Linux autostart entry: its file name and icon name must match the installed app
+const autoStart = "src/main/autoStart.ts";
+writeFileSync(
+    autoStart,
+    readFileSync(autoStart, "utf8")
+        .replace("equibop.desktop", "kittycord.desktop")
+        .replace("Icon=equibop", "Icon=kittycord")
+);
+
+walk("static/views");
+console.log("Rebranded source text");
