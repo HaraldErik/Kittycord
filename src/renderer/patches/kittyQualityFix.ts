@@ -66,7 +66,7 @@ function munge<T extends RTCLocalSessionDescriptionInit>(desc: T | undefined): T
 const proto = RTCPeerConnection.prototype;
 const setLocalDescription = proto.setLocalDescription as (
     this: RTCPeerConnection,
-    d?: RTCSessionDescriptionInit
+    d?: RTCLocalSessionDescriptionInit
 ) => Promise<void>;
 const setRemoteDescription = proto.setRemoteDescription as (
     this: RTCPeerConnection,
