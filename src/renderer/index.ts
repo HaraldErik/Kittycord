@@ -12,6 +12,7 @@ import "./rpc";
 import "./patches/tray";
 import "./patches/kittyBadges";
 import "./plugins/hideBotTag";
+import "./plugins/appleEmoji";
 import "./patches/kittyBranding";
 import "./patches/kittyQualityFix";
 import "./patches/kittyPerformanceFix";
